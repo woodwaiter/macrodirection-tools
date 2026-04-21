@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MacroDirection — Caption Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0A0812;
+  --panel: #0F0E1A;
+  --purple: #7F77DD;
+  --purple-light: #CECBF6;
+  --purple-dark: #3C3489;
+  --green: #1D9E75;
+  --red: #E24B4A;
+  --amber: #EF9F27;
+  --text: #F0EFF8;
+  --muted: #6B6890;
+  --border: rgba(127,119,221,0.2);
+  --card: rgba(127,119,221,0.05);
+}
+
+body {
+  font-family: 'Space Mono', monospace;
+  background: #12101F;
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0;
+}
+
+.header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.header-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--purple-light);
+  letter-spacing: 0.05em;
+}
+.header-sub {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-full { grid-column: 1 / -1; }
+
+label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+input[type=text], select, textarea {
+  background: rgba(127,119,221,0.08);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  padding: 10px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--purple); }
+textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+select option { background: #1A1A2E; }
+
+.bias-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.bias-btn {
+  padding: 10px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.04em;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.bias-btn.bull.active { background: rgba(29,158,117,0.15); color: var(--green); border-color: var(--green); }
+.bias-btn.bear.active { background: rgba(226,75,74,0.15); color: var(--red); border-color: var(--red); }
+.bias-btn.neut.active { background: rgba(239,159,39,0.15); color: var(--amber); border-color: var(--amber); }
+
+.platform-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.platform-btn {
+  padding: 10px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.04em;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.platform-btn.active { background: rgba(127,119,221,0.15); color: var(--purple-light); border-color: var(--purple); }
+
+.generate-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.08em;
+  background: var(--purple-dark);
+  color: var(--purple-light);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.generate-btn:hover { background: var(--purple); }
+.generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.output-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.output-platform {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.platform-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.06em;
+}
+.badge-x { background: rgba(127,119,221,0.15); color: var(--purple-light); }
+.badge-insta { background: rgba(212,83,126,0.15); color: #ED93B1; }
+.badge-discord { background: rgba(88,101,242,0.15); color: #8EA1E1; }
+
+.copy-btn {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.copy-btn:hover { border-color: var(--purple); color: var(--purple-light); }
+.copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+.output-body { padding: 20px; }
+.output-text {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+  font-family: 'Space Mono', monospace;
+}
+.output-hashtags {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--purple);
+  line-height: 1.6;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--purple);
+  animation: pulse 1.2s infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse { 0%,100%{opacity:0.2} 50%{opacity:1} }
+
+.error { padding: 20px; font-size: 12px; color: var(--red); }
+
+.divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+.char-count {
+  font-size: 9px;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 4px;
+}
+.char-count.warn { color: var(--amber); }
+.char-count.over { color: var(--red); }
+
+@media (max-width: 600px) {
+  .field-grid, .field-grid-3 { grid-template-columns: 1fr; }
+  .main { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">MacroDirection</div>
+    <div class="header-sub">Caption Generator</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="section-title">Asset & Analyse</div>
+
+    <div class="field-grid-3" style="margin-bottom:14px;">
+      <div class="field">
+        <label>Asset</label>
+        <select id="asset">
+          <option>EUR/USD</option>
+          <option>GBP/USD</option>
+          <option>USD/JPY</option>
+          <option>USD/CAD</option>
+          <option>USD/CHF</option>
+          <option>AUD/USD</option>
+          <option>NZD/USD</option>
+          <option>EUR/JPY</option>
+          <option>GBP/JPY</option>
+          <option>EUR/GBP</option>
+          <option>Gold (XAU/USD)</option>
+          <option>Silver (XAG/USD)</option>
+          <option>S&P 500</option>
+          <option>Nasdaq 100</option>
+          <option>US 10Y Yield</option>
+          <option>DXY</option>
+          <option>Oil (WTI)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Confidence %</label>
+        <input type="text" id="confidence" placeholder="z.B. 82" maxlength="3">
+      </div>
+      <div class="field">
+        <label>Makro-Bias</label>
+        <div class="bias-row">
+          <button class="bias-btn bull" onclick="setBias('BULLISH',this)">BULL</button>
+          <button class="bias-btn neut" onclick="setBias('NEUTRAL',this)">NEUT</button>
+          <button class="bias-btn bear active" onclick="setBias('BEARISH',this)">BEAR</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label>Analyse / Key Drivers (aus MacroDirection kopieren)</label>
+      <textarea id="analysis" placeholder="Füge hier die Makro-Analyse und Key Drivers aus MacroDirection ein..."></textarea>
+    </div>
+
+    <div class="field" style="margin-bottom:20px;">
+      <label>Key Risk (optional)</label>
+      <input type="text" id="risk" placeholder="z.B. A Fed hawkish surprise could reverse momentum">
+    </div>
+
+    <div class="divider" style="margin-bottom:20px;"></div>
+
+    <div class="section-title">Plattform & Stil</div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label>Plattform auswählen</label>
+      <div class="platform-row">
+        <button class="platform-btn active" onclick="setPlatform('instagram',this)">Instagram</button>
+        <button class="platform-btn" onclick="setPlatform('x',this)">X (Twitter)</button>
+        <button class="platform-btn" onclick="setPlatform('discord',this)">Discord</button>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:20px;">
+      <label>Caption-Stil</label>
+      <select id="style">
+        <option value="hook">Hook & Provokation</option>
+        <option value="edu">Edukativ & wertvoll</option>
+        <option value="analysis">Analyse-Update</option>
+        <option value="organic">Organisch (kein offensichtlicher Sales)</option>
+      </select>
+    </div>
+
+    <button class="generate-btn" id="gen-btn" onclick="generate()">CAPTION GENERIEREN</button>
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="output"></div>
+
+</div>
+
+<script>
+let selectedBias = 'BEARISH';
+let selectedPlatform = 'instagram';
+
+function setBias(b, el) {
+  selectedBias = b;
+  document.querySelectorAll('.bias-btn').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setPlatform(p, el) {
+  selectedPlatform = p;
+  document.querySelectorAll('.platform-btn').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'COPIED!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+async function generate() {
+  const asset = document.getElementById('asset').value;
+  const confidence = document.getElementById('confidence').value || '75';
+  const analysis = document.getElementById('analysis').value;
+  const risk = document.getElementById('risk').value;
+  const style = document.getElementById('style').value;
+  const btn = document.getElementById('gen-btn');
+
+  if (!analysis.trim()) {
+    document.getElementById('output').innerHTML = `<div class="output-card"><div class="error">Bitte füge die Makro-Analyse ein.</div></div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  document.getElementById('output').innerHTML = `
+    <div class="output-card">
+      <div class="loading">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <span>KI generiert deine Caption...</span>
+      </div>
+    </div>`;
+
+  const styleMap = {
+    hook: 'provocative hook style — start with a bold contrarian statement, build tension, then reveal the macro logic',
+    edu: 'educational and value-driven — explain the macro context clearly, teach something useful',
+    analysis: 'clean analysis update — data-first, professional, concise',
+    organic: 'completely organic — sounds like a real trader sharing thoughts, no obvious promotion, subtle mention of MacroDirection only if it fits naturally'
+  };
+
+  const platformMap = {
+    instagram: `Instagram caption. Format: hook line, blank line, key data points, blank line, macro conclusion, blank line, CTA to macrodirection.com and @MacroDirection on X. End with: "Not financial advice. For educational purposes only." Then provide 5 relevant hashtags on a new line starting with HASHTAGS:`,
+    x: `X (Twitter) post. Keep it punchy and under 280 chars for the main hook. Format: hook, key numbers, conclusion, CTA referencing Instagram @MacroDirection. End with: "Not financial advice. For educational purposes only." NO hashtags needed.`,
+    discord: `Discord message. Sound like a real trader sharing analysis organically — no links, no obvious promotion. Only mention MacroDirection subtly if it fits naturally. End with a question to spark discussion. Keep it conversational and authentic.`
+  };
+
+  const prompt = `You are a social media content creator for MacroDirection (macrodirection.com), an AI-powered macro analysis platform for swing traders and prop-firm traders. The X/Instagram handle is @MacroDirection.
+
+Generate a caption for ${platformMap[selectedPlatform]}
+
+Asset: ${asset}
+Bias: ${selectedBias}
+Confidence: ${confidence}%
+Analysis: ${analysis}
+${risk ? `Key Risk: ${risk}` : ''}
+Style: ${styleMap[style]}
+
+Rules:
+- Sound like a real knowledgeable trader, not a corporate account
+- Be specific with the numbers from the analysis
+- For Instagram/X: always include "Not financial advice. For educational purposes only."
+- For Discord: sound completely organic, no links
+- For Instagram: provide exactly 5 hashtags after HASHTAGS: on a new line
+- Do NOT use markdown formatting like ** or ## in the output`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content.map(c => c.text || '').join('');
+
+    let captionText = raw;
+    let hashtags = '';
+
+    if (selectedPlatform === 'instagram' && raw.includes('HASHTAGS:')) {
+      const parts = raw.split('HASHTAGS:');
+      captionText = parts[0].trim();
+      hashtags = parts[1].trim();
+    }
+
+    const platformLabels = { instagram: 'Instagram', x: 'X (Twitter)', discord: 'Discord' };
+    const platformBadges = { instagram: 'badge-insta', x: 'badge-x', discord: 'badge-discord' };
+    const charCount = captionText.length;
+    const isX = selectedPlatform === 'x';
+    const charClass = isX ? (charCount > 280 ? 'over' : charCount > 240 ? 'warn' : '') : '';
+
+    document.getElementById('output').innerHTML = `
+      <div class="output-card">
+        <div class="output-header">
+          <div class="output-platform">
+            <span class="platform-badge ${platformBadges[selectedPlatform]}">${platformLabels[selectedPlatform]}</span>
+            ${isX ? `<span class="char-count ${charClass}">${charCount} Zeichen</span>` : ''}
+          </div>
+          <button class="copy-btn" onclick="copyText(this, ${JSON.stringify(captionText + (hashtags ? '\n\n' + hashtags : ''))})">COPY</button>
+        </div>
+        <div class="output-body">
+          <div class="output-text">${captionText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          ${hashtags ? `<div class="output-hashtags">${hashtags}</div>` : ''}
+        </div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('output').innerHTML = `<div class="output-card"><div class="error">Fehler beim Generieren — bitte nochmal versuchen.</div></div>`;
+  }
+
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
